@@ -25,7 +25,7 @@ import plot
 #Loading data
 def load_data():
     #Loading MUSIC INFO dataframe/database link: https://www.kaggle.com/datasets/saurabhshahane/music-dataset-1950-to-2019?resource=download
-    music_db = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\Code\data\DB_2.0.csv")
+    music_db = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\DB_2.0.csv")
     music_db.dropna(inplace=True)
     
     
@@ -36,7 +36,7 @@ def load_data():
     music_db['artist_name'] = music_db['artist_name'].str.strip()
     
 
-    popularity= pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\Code\data\Spotify_final_dataset.csv")
+    popularity= pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\Spotify_final_dataset.csv")
     popularity.dropna(inplace=True)
     
     popularity['Song Name'] = popularity['Song Name'].fillna('').apply(lambda x: x.lower())
