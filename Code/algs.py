@@ -181,7 +181,7 @@ def kNNRecommendation(dataframe, analyzed_songs, k, num_recommendations = 10):
     recommended_songs = dataframe.iloc[recommended_songs_indices]
         
     recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(analyzed_songs['track_name'])]    
-    recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).head(10)
+    recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).sample(10)
 
     plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']], 
                   1,

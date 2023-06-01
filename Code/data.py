@@ -49,28 +49,19 @@ def load_data():
     popularity['Artist Name'] = popularity['Artist Name'].str.lower()
     popularity['Artist Name'] = popularity['Artist Name'].str.strip()
     
-    
-    tracks = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\tracks1.csv")
-    
-    tracks['artist.12'] = tracks['artist.12'].str.lower()
-    tracks['artist.12'] = tracks['artist.12'].str.strip()
-    tracks['track.19'] = tracks['track.19'].str.lower()
-    tracks['track.19'] = tracks['track.19'].str.strip()
-    
     artists = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\artists.csv")
     artists['name'] = artists['name'].str.lower()
     artists['name'] = artists['name'].str.strip()
     
     artists['genres'] = artists['genres'].apply(ast.literal_eval) 
 
-    return music_db, popularity, tracks, artists
+    return music_db, popularity, artists
 
 
-def merge_datasets(music_db, popularity, tracks, artists):
+def merge_datasets(music_db, popularity, artists):
     merged_data = music_db.merge(popularity, left_on=['artist_name', 'track_name'], right_on=['Artist Name', 'Song Name'], how='left')
     merged_data['Total Streams'] = merged_data['Total Streams'].fillna(0)  # Cambiar NaN por 0 en 'Total Streams'
-    
-    #merged_data = merged_data.merge(tracks, left_on=['artist_name', 'track_name'], right_on=['artist.12', 'track.19'], how='left')
+
         
     artists_subset = artists[['name', 'genres']]
     merged_data = merged_data.merge(artists_subset, left_on='artist_name', right_on='name', how='left')

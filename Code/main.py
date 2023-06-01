@@ -62,8 +62,8 @@ if __name__ == '__main__':
     
    
     # LOAD DB
-    music_db, popularity, tracks, artists = data.load_data()
-    merged_ds = data.merge_datasets(music_db, popularity, tracks, artists) 
+    music_db, popularity, artists = data.load_data()
+    merged_ds = data.merge_datasets(music_db, popularity, artists) 
     
     #Analisis
     #music_db = music_db.sample(n=10000, random_state=1)
