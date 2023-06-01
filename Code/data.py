@@ -21,6 +21,8 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 
 import plot
+import ast
+
 
 #Loading data
 def load_data():
@@ -47,13 +49,39 @@ def load_data():
     popularity['Artist Name'] = popularity['Artist Name'].str.lower()
     popularity['Artist Name'] = popularity['Artist Name'].str.strip()
     
+    
+    tracks = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\tracks1.csv")
+    
+    tracks['artist.12'] = tracks['artist.12'].str.lower()
+    tracks['artist.12'] = tracks['artist.12'].str.strip()
+    tracks['track.19'] = tracks['track.19'].str.lower()
+    tracks['track.19'] = tracks['track.19'].str.strip()
+    
+    artists = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\artists.csv")
+    artists['name'] = artists['name'].str.lower()
+    artists['name'] = artists['name'].str.strip()
+    
+    artists['genres'] = artists['genres'].apply(ast.literal_eval) 
 
-    return music_db, popularity
+    return music_db, popularity, tracks, artists
 
-def merge_datasets(music_db, popularity):
-    merged_data = music_db.merge(popularity, left_on=['artist_name', 'track_name'], right_on=['Artist Name', 'Song Name' ], how='left')
+
+def merge_datasets(music_db, popularity, tracks, artists):
+    merged_data = music_db.merge(popularity, left_on=['artist_name', 'track_name'], right_on=['Artist Name', 'Song Name'], how='left')
     merged_data['Total Streams'] = merged_data['Total Streams'].fillna(0)  # Cambiar NaN por 0 en 'Total Streams'
+    
+    #merged_data = merged_data.merge(tracks, left_on=['artist_name', 'track_name'], right_on=['artist.12', 'track.19'], how='left')
+        
+    artists_subset = artists[['name', 'genres']]
+    merged_data = merged_data.merge(artists_subset, left_on='artist_name', right_on='name', how='left')
+    merged_data.drop_duplicates(subset=['artist_name', 'track_name'], inplace=True)
+    merged_data['genres'] = merged_data['genres'].fillna('[]')
 
+
+    merged_data = merged_data[['artist_name', 'track_name', 'release_date', 'genre', 'lyrics', 'len', 'dating', 'violence', 'world/life', 'night/time', 'shake the audience', 'family/gospel', 'romantic', 'communication', 'obscene', 'music', 'movement/places', 'light/visual perceptions', 'family/spiritual', 'like/girls', 'sadness', 'feelings', 'danceability', 'loudness', 'acousticness', 'instrumentalness', 'valence', 'energy', 'topic', 'lyrics_lemmatized', 'positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'genre_code', 'release_date_code', 'topic_code', 'Total Streams', 'genres']]
+    
+    merged_data.reset_index(drop=True, inplace=True)
+    
     return merged_data
 
 
@@ -155,7 +183,7 @@ def analyze_liked_songs(liked_songs, dataframe, n_clusters, sentiment_plot=False
 
     
     if year_genre_plot:
-        plot.plot_clusters(dataframe[['genre', 'release_date', 'cluster_genre_year']], 
+        plot.plot_clusters(dataframe[['genre', 'release_date']], 
                           recommended_songs=None, 
                           liked_songs=songs_df,
                           genre_year=True,
@@ -187,8 +215,7 @@ def create_liked_songs_df(liked_songs, music_db):
     
 def search_correlation(dataframe):
     
-
-    columns =['positive_sentiment', 'negative_sentiment', 'neutral_sentiment',  'dating', 'violence', 'world/life', 'night/time', 'shake the audience', 'family/gospel', 'romantic', 'communication', 'obscene', 'music', 'sadness', 'feelings', 'danceability', 'loudness',  'acousticness', 'instrumentalness', 'valence', 'energy', 'topic_code']
+    columns =['positive_sentiment', 'negative_sentiment', 'neutral_sentiment',  'violence', 'world/life', 'night/time', 'shake the audience', 'romantic', 'music', 'sadness', 'loudness',  'acousticness', 'energy', 'topic_code', 'genre_code']
     
     # Crear un nuevo dataframe con las columnas seleccionadas
     selected_df = dataframe[columns]
@@ -210,3 +237,48 @@ def search_correlation(dataframe):
     
     # Mostrar el gráfico
     heatmap.figure.savefig('data/heatmap.png', dpi=300, bbox_inches='tight')
+    
+    
+    
+def classify_gender(dataset_set, pop, rock, blues, country, jazz, hiphop, reggae):
+   
+    # for ds in dataset_set:
+    #     for column in ds:
+    #         column['artist_name'] = 'artist_name'
+    #         column['track_name'] = 'track_name'
+    #         column['release_date'] = 'artist_name'
+        
+        
+        
+        
+        
+        
+    #         # Filtrar el dataset para obtener solo las entradas de un género específico
+    #         if genero == 'pop':
+    #             pop_dataset = dataframe[dataframe['genre'] == genero].copy()
+    #         elif genero == 'rock':
+    #             rock_dataset = dataframe[dataframe['genre'] == genero].copy()
+    #         elif genero == 'blues':
+    #             blues_dataset = dataframe[dataframe['genre'] == genero].copy()
+    #         elif genero == 'jazz':
+    #             jazz_dataset = dataframe[dataframe['genre'] == genero].copy()
+    #         elif genero == 'hip hop':
+    #             hiphop_dataset = dataframe[dataframe['genre'] == genero].copy()
+    #         elif genero == 'country':
+    #             country_dataset = dataframe[dataframe['genre'] == genero].copy()
+    #         elif genero == 'reggae':
+    #             reggae_dataset = dataframe[dataframe['genre'] == genero].copy()
+        
+    #     # Imprimir los datasets filtrados por género
+    
+    return(dataset_set)
+
+   
+    
+    
+    
+    
+    
+    
+    
+    

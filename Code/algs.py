@@ -11,6 +11,7 @@ import tensorflow as tf
 import pandas as pd
 import random
 
+from collections import Counter
 
 import data
 import plot
@@ -77,18 +78,20 @@ def recommend_songs(dataframe, analyzed_songs, plot_recommendations=False, senti
 
 def cosine_sim_Recommendations(liked_songs_df, dataframe, plot_recommendations=False):
     
-    
-    genre_mean = data.genre_analysis(dataframe, liked_songs_df)
     release_date_mean = data.year_analysis(dataframe, liked_songs_df)
-    topic_median = data.topic_analysis(dataframe, liked_songs_df)
-        
-    # # Filtrar canciones por género y año
-    dataframe_cosine = dataframe[(dataframe['genre_code'] == float(genre_mean)) &
+    
+    liked_genres = set()
+    for genres_list in liked_songs_df['genres']:
+        if isinstance(genres_list, list):
+            liked_genres.update(genres_list)
+
+                
+    dataframe_cosine = dataframe[dataframe['genres'].apply(lambda x: any(genre in liked_genres for genre in x)) &
                                  (dataframe['release_date_code'] == float(release_date_mean))]
 
     
     # Quitar aquellas columnas que no puedan producir un cálculo en NumPy, y convertir los demás valores a numpy
-    liked_songs_data = liked_songs_df.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'sentiments', 'Position', 'Artist Name', 'Song Name', 'Days', 'Top 10 (xTimes)', 'Peak Position', 'Peak Position (xTimes)', 'Peak Streams', 'Total Streams'], axis=1)
+    liked_songs_data = liked_songs_df.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'Total Streams', 'genres'], axis=1)
     liked_songs_data = liked_songs_data.fillna(0).to_numpy()
 
     # Calcular la media de las columnas de las liked_songs
@@ -108,7 +111,7 @@ def cosine_sim_Recommendations(liked_songs_df, dataframe, plot_recommendations=F
     
 
     # Calcular el cosine similarity con los pesos de las columnas ajustados
-    music_data = dataframe_cosine.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'sentiments', 'Position', 'Artist Name', 'Song Name', 'Days', 'Top 10 (xTimes)', 'Peak Position', 'Peak Position (xTimes)', 'Peak Streams', 'Total Streams'], axis=1)
+    music_data = dataframe_cosine.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'Total Streams', 'genres'], axis=1)
     #music_data = music_data.fillna(0).to_numpy()
     
     mask_liked = ~np.all(liked_songs_data == 0, axis=1)
@@ -126,8 +129,6 @@ def cosine_sim_Recommendations(liked_songs_df, dataframe, plot_recommendations=F
     #print(weighted_liked_songs_data)
 
     similarity_scores = cosine_similarity(weighted_music_data, weighted_liked_songs_data)
-    
-
 
     # Obtener los índices de las canciones más similares
     index = np.argsort(similarity_scores, axis=0)[::-1]
@@ -141,54 +142,51 @@ def cosine_sim_Recommendations(liked_songs_df, dataframe, plot_recommendations=F
     
     
     recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(liked_songs_df['track_name'])]
-    recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).head(10)
+    #recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).head(10)
+    
+    plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']], 
+                  1,
+                  recommended_songs, 
+                  liked_songs=liked_songs_df,
+                  sentiment=True,
+                  title="Cosine Sim Recommended Songs")
 
     return recommended_songs.head(10)
 
 
 def kNNRecommendation(dataframe, analyzed_songs, k, num_recommendations = 10):
     
-    genre_mean = data.genre_analysis(dataframe, analyzed_songs)
-    release_date_mean = data.year_analysis(dataframe, analyzed_songs)
-    topic_median = data.topic_analysis(dataframe, analyzed_songs)
-    
-    
-    songs_features = analyzed_songs[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']].to_numpy()
-    dataframe_features = dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']].to_numpy()
-    
+    liked_genres = set()
+    for genres_list in analyzed_songs['genres']:
+        if isinstance(genres_list, list):
+            liked_genres.update(genres_list)
+
+                
+    dataframe = dataframe[dataframe['genres'].apply(lambda x: any(genre in liked_genres for genre in x))]
+
+    songs_features = analyzed_songs[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence','loudness', 'acousticness', 'energy' ]].to_numpy()
+    dataframe_features = dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence', 'loudness', 'acousticness', 'energy' ]].to_numpy()
+                
+    #dataframe = dataframe[dataframe['genres'].apply(lambda x: any( genre in liked_genres for genre in x))] 
+
     #knn analisis
     knn = NearestNeighbors(n_neighbors=k)
-    knn.fit(songs_features)
-
+    knn.fit(dataframe_features)
+    
     # Encontrar los k vecinos más cercanos
-    _, indices = knn.kneighbors(dataframe_features)
+    _, indices = knn.kneighbors(songs_features, n_neighbors=k)
     
     # Obtener las canciones recomendadas por los vecinos más cercanos
-    recommended_songs_indices = np.unique(indices.flatten())  # Indices únicos de las canciones recomendadas
+    recommended_songs_indices = indices.flatten()  # Índices de las canciones recomendadas
     recommended_songs = dataframe.iloc[recommended_songs_indices]
-
-    release_date_above = release_date_mean + 0.0145
-    release_date_below = release_date_mean - 0.0145
-    
-    # Filtrar canciones por género y año
-    recommended_songs = dataframe.loc[(dataframe['genre_code'] == genre_mean) & 
-                                      ((dataframe['release_date_code'] == release_date_mean) | 
-                                       (dataframe['release_date_code'] == release_date_above) |
-                                       (dataframe['release_date_code'] == release_date_below)) & 
-                                      (dataframe['topic_code'] == topic_median)]
-    
-    recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(analyzed_songs['track_name'])]
-    
+        
+    recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(analyzed_songs['track_name'])]    
     recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).head(10)
 
-    # if len(recommended_songs) > num_recommendations:
-    #     recommended_songs = random.sample(list(recommended_songs.index), num_recommendations)
-    #     recommended_songs = dataframe.loc[recommended_songs].head()
-
-
-    plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'sentiment_cluster']], 
+    plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']], 
                   1,
                   recommended_songs, 
+                  liked_songs= analyzed_songs,
                   sentiment=True,
                   title="Sentiment KNN Recommended Songs")
     

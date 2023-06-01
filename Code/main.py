@@ -16,6 +16,8 @@ Created on Fri May 26 15:38:42 2023
 import data
 import algs
 
+import pandas as pd
+
 
 def printSongs(recommended_songs, liked_songs_trigger=False, title= "General"):
     recommended_songs = recommended_songs['track_name'] + ' - ' +  recommended_songs['artist_name']
@@ -39,22 +41,29 @@ if __name__ == '__main__':
     n_clusters = 10
     n_clusters_sentiment= 10
     n_clusters_year_genre = 10 
-    k = 3
+    k = 10
     liked_songs = []
     file_songs = "liked_songs.txt"  # Nombre del archivo
+    
+     
+    # pop_dataset = pd.DataFrame()
+    # rock_dataset = pd.DataFrame()
+    # blues_dataset = pd.DataFrame()
+    # country_dataset = pd.DataFrame()
+    # jazz_dataset = pd.DataFrame()
+    # hiphop_dataset = pd.DataFrame()
+    # reggae_dataset = pd.DataFrame()
+    
+    # dataset_set = [pop_dataset, rock_dataset, blues_dataset, country_dataset, jazz_dataset, hiphop_dataset, reggae_dataset]
     
     # Leer el contenido actual del archivo
     with open(file_songs, "r") as f:
         liked_songs = set(f.read().splitlines())
     
    
-    # for i in range(3):
-    #     cancion = input("Ingresa el nombre de la canción {}: ".format(i+1))
-    #     liked_songs.append(cancion)
-
     # LOAD DB
-    music_db, popularity = data.load_data()
-    merged_ds = data.merge_datasets(music_db, popularity) 
+    music_db, popularity, tracks, artists = data.load_data()
+    merged_ds = data.merge_datasets(music_db, popularity, tracks, artists) 
     
     #Analisis
     #music_db = music_db.sample(n=10000, random_state=1)
@@ -62,6 +71,9 @@ if __name__ == '__main__':
     # music_db = data.clean_lyrics(music_db)
     # music_db = data.sentiment_analysis(music_db)
     data.encoding_and_normalization(music_db)
+    
+    
+    #dataset_set = data.classify_gender(merged_ds, pop, rock, blues, country, jazz, hiphop, reggae)
     
     # #database sentimentally clustered
     # music_db = cluster.sentiment_cluster_songs(music_db, n_clusters_sentiment)
@@ -86,10 +98,10 @@ if __name__ == '__main__':
     
     liked_songs = set(recommended_songs['track_name'])
     
-    # Escribir los elementos del conjunto en un archivo de texto
-    with open('liked_songs.txt', 'a') as f:
-        for track_name in liked_songs:
-            f.write(track_name + '\n')
+    # # Escribir los elementos del conjunto en un archivo de texto
+    # with open('liked_songs.txt', 'a') as f:
+    #     for track_name in liked_songs:
+    #         f.write(track_name + '\n')
     
     # printSongs(emotionally_recommended_songs, title="Emotionally")
     # printSongs(genre_year_recommended_songs, title="Genre/Year")

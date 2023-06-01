@@ -69,12 +69,6 @@ def plot_clusters(dataframe, n_clusters=10, recommended_songs=None, liked_songs 
         plt.xticks(fontsize=10)
         plt.yticks(fontsize=10)
         
-        for i in range(len(dataframe['cluster_genre_year'].unique())):            
-            cluster_df = dataframe[dataframe['cluster_genre_year'] == i]
-            plt.scatter(cluster_df['genre'],
-                        cluster_df['release_date'], )
-                         #color=colors(i), label=f'Cluster {i}')
-        
         if recommended_songs is not None:
             plt.scatter(recommended_songs['genre'], 
                         recommended_songs['release_date'], 
