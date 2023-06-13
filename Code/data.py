@@ -54,8 +54,14 @@ def load_data():
     artists['name'] = artists['name'].str.strip()
     
     artists['genres'] = artists['genres'].apply(ast.literal_eval) 
+    
+    
+    column_names = ['userid', 'timestamp', 'artid', 'artname', 'traid', 'track-name']
+    user_db = pd.read_csv(r"C:\Users\34653\Documents\UPF\TFG\MusicRecommendationAlgorithm\Code\data\userid-timestamp-artid-artname-traid-traname.tsv", delimiter='\t', error_bad_lines=False, nrows=8000000, names=column_names)
+    user_db['track-name'] = user_db['track-name'].str.lower()
+    user_db['track-name'] = user_db['track-name'].str.strip()
 
-    return music_db, popularity, artists
+    return music_db, popularity, artists, user_db
 
 
 def merge_datasets(music_db, popularity, artists):
@@ -154,7 +160,7 @@ def topic_analysis(dataframe, songs):
     return closest_topic
 
 
-def analyze_liked_songs(liked_songs, dataframe, n_clusters, sentiment_plot=False, year_genre_plot= False):
+def analyze_liked_songs(liked_songs, dataframe, sentiment_plot=False, year_genre_plot= False):
     
     songs_df = dataframe[dataframe['track_name'].isin(liked_songs)].drop_duplicates(subset=['track_name'])
     #year = get_mean_year(songs_df)
@@ -203,7 +209,19 @@ def create_liked_songs_df(liked_songs, music_db):
         return liked_songs_df
     else:
         return None
+   
     
+def create_song_attributes_df(song_titles, merged_ds):
+    # Filtrar las canciones de la base de datos que contengan los títulos de canciones dados
+    filtered_songs = merged_ds[merged_ds['track_name'].str.contains('|'.join(song_titles))]
+ 
+    # Crear un nuevo dataframe con las canciones y todos sus atributos
+    song_attributes_df = filtered_songs.copy()
+    
+    return song_attributes_df
+
+
+
 def search_correlation(dataframe):
     
     columns =['positive_sentiment', 'negative_sentiment', 'neutral_sentiment',  'violence', 'world/life', 'night/time', 'shake the audience', 'romantic', 'music', 'sadness', 'loudness',  'acousticness', 'energy', 'topic_code', 'genre_code']
@@ -231,38 +249,38 @@ def search_correlation(dataframe):
     
     
     
-def classify_gender(dataset_set, pop, rock, blues, country, jazz, hiphop, reggae):
-   
-    # for ds in dataset_set:
-    #     for column in ds:
-    #         column['artist_name'] = 'artist_name'
-    #         column['track_name'] = 'track_name'
-    #         column['release_date'] = 'artist_name'
-        
-        
-        
-        
-        
-        
-    #         # Filtrar el dataset para obtener solo las entradas de un género específico
-    #         if genero == 'pop':
-    #             pop_dataset = dataframe[dataframe['genre'] == genero].copy()
-    #         elif genero == 'rock':
-    #             rock_dataset = dataframe[dataframe['genre'] == genero].copy()
-    #         elif genero == 'blues':
-    #             blues_dataset = dataframe[dataframe['genre'] == genero].copy()
-    #         elif genero == 'jazz':
-    #             jazz_dataset = dataframe[dataframe['genre'] == genero].copy()
-    #         elif genero == 'hip hop':
-    #             hiphop_dataset = dataframe[dataframe['genre'] == genero].copy()
-    #         elif genero == 'country':
-    #             country_dataset = dataframe[dataframe['genre'] == genero].copy()
-    #         elif genero == 'reggae':
-    #             reggae_dataset = dataframe[dataframe['genre'] == genero].copy()
-        
-    #     # Imprimir los datasets filtrados por género
+def createRecommendationMatrix(dataframe, user_db):
+    dataframe['track_name'].fillna('Desconocido', inplace=True)
     
-    return(dataset_set)
+    usuarios_unicos = user_db['userid'].unique()
+    canciones_unicas = dataframe['track_name'].str.strip().unique()
+    
+    print(len(canciones_unicas))
+    
+    # Crear una matriz vacía de tamaño usuarios x canciones
+    matriz_recomendacion = np.zeros((len(usuarios_unicos), len(canciones_unicas)))
+    
+    # Llenar la matriz con los valores correspondientes
+    for _, row in user_db.iterrows():
+        usuario = row['userid']
+        cancion = row['track-name']
+        valor = 1  # Puedes ajustar el valor según tus criterios
+        
+        #print(usuario, cancion)
+        
+        # Verificar si la canción está presente en el array de canciones únicas
+        if cancion in canciones_unicas:
+            # Obtener el índice de la canción en el array de canciones únicas
+            cancion_idx = np.where(canciones_unicas == cancion)[0][0]
+            
+            # Obtener el índice del usuario en la matriz
+            usuario_idx = np.where(usuarios_unicos == usuario)[0][0]
+            
+            # Asignar el valor en la matriz
+            matriz_recomendacion[usuario_idx, cancion_idx] = valor
+    
+    # Ahora tienes la matriz de usuarios y canciones lista para su uso en el sistema de recomendación
+    return matriz_recomendacion 
 
    
     

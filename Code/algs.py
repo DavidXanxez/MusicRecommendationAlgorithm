@@ -91,7 +91,7 @@ def cosine_sim_Recommendations(liked_songs_df, dataframe, plot_recommendations=F
 
     
     # Quitar aquellas columnas que no puedan producir un cálculo en NumPy, y convertir los demás valores a numpy
-    liked_songs_data = liked_songs_df.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'Total Streams', 'genres'], axis=1)
+    liked_songs_data = liked_songs_df.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'Total Streams', 'genres', 'sentiments'], axis=1)
     liked_songs_data = liked_songs_data.fillna(0).to_numpy()
 
     # Calcular la media de las columnas de las liked_songs
@@ -111,7 +111,7 @@ def cosine_sim_Recommendations(liked_songs_df, dataframe, plot_recommendations=F
     
 
     # Calcular el cosine similarity con los pesos de las columnas ajustados
-    music_data = dataframe_cosine.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'Total Streams', 'genres'], axis=1)
+    music_data = dataframe_cosine.drop(['artist_name', 'track_name', 'lyrics', 'genre', 'release_date', 'topic', 'lyrics_lemmatized', 'Total Streams', 'genres', 'sentiments'], axis=1)
     #music_data = music_data.fillna(0).to_numpy()
     
     mask_liked = ~np.all(liked_songs_data == 0, axis=1)
@@ -163,34 +163,76 @@ def kNNRecommendation(dataframe, analyzed_songs, k, num_recommendations = 10):
 
                 
     dataframe = dataframe[dataframe['genres'].apply(lambda x: any(genre in liked_genres for genre in x))]
-
-    songs_features = analyzed_songs[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence','loudness', 'acousticness', 'energy' ]].to_numpy()
-    dataframe_features = dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence', 'loudness', 'acousticness', 'energy' ]].to_numpy()
-                
-    #dataframe = dataframe[dataframe['genres'].apply(lambda x: any( genre in liked_genres for genre in x))] 
-
-    #knn analisis
+    
+    songs_features = analyzed_songs[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence', 'loudness', 'acousticness', 'energy', 'release_date_code']].to_numpy()
+    dataframe_features = dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence', 'loudness', 'acousticness', 'energy', 'release_date_code']].to_numpy()
+    
+    # KNN analysis
     knn = NearestNeighbors(n_neighbors=k)
     knn.fit(dataframe_features)
     
-    # Encontrar los k vecinos más cercanos
+    # Find the k nearest neighbors
     _, indices = knn.kneighbors(songs_features, n_neighbors=k)
     
-    # Obtener las canciones recomendadas por los vecinos más cercanos
-    recommended_songs_indices = indices.flatten()  # Índices de las canciones recomendadas
+    # Get recommended songs from the nearest neighbors
+    recommended_songs_indices = indices.flatten()  # Indices of the recommended songs
     recommended_songs = dataframe.iloc[recommended_songs_indices]
-        
-    recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(analyzed_songs['track_name'])]    
-    recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).sample(10)
-
-    plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']], 
-                  1,
-                  recommended_songs, 
-                  liked_songs= analyzed_songs,
-                  sentiment=True,
-                  title="Sentiment KNN Recommended Songs")
+    
+    # Exclude analyzed songs from recommendations
+    recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(analyzed_songs['track_name'])]
+    
+    # Sort and sample the recommended songs
+    recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False)
+    
+    plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']],
+                       1,
+                       recommended_songs,
+                       liked_songs=analyzed_songs,
+                       sentiment=True,
+                       title="Sentiment KNN Recommended Songs")
     
     return recommended_songs
+    # # liked_genres = set()
+    # # for genres_list in analyzed_songs['genres']:
+    # #     if isinstance(genres_list, list):
+    # #         liked_genres.update(genres_list)
+
+                
+    # #dataframe = dataframe[dataframe['genres'].apply(lambda x: any(genre in liked_genres for genre in x))]
+    # #dataframe = dataframe[dataframe['genres'].apply(lambda x: any(genre in x for genre in liked_genres))]
+
+    
+    # # Obtener los atributos de todas las canciones en merged_ds
+
+    # songs_features = analyzed_songs[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence','loudness', 'acousticness', 'energy' ]].to_numpy()
+    # dataframe_features = dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment', 'violence', 'loudness', 'acousticness', 'energy' ]].to_numpy()
+                
+    # # songs_features = analyzed_songs.drop(['track_name'], axis=1).values
+    # # dataframe_features = dataframe.drop(['track_name'], axis=1).values
+    # #dataframe = dataframe[dataframe['genres'].apply(lambda x: any( genre in liked_genres for genre in x))] 
+
+    # #knn analisis
+    # knn = NearestNeighbors(n_neighbors=k)
+    # knn.fit(dataframe_features)
+    
+    # # Encontrar los k vecinos más cercanos
+    # _, indices = knn.kneighbors(songs_features, n_neighbors=k)
+    
+    # # Obtener las canciones recomendadas por los vecinos más cercanos
+    # recommended_songs_indices = indices.flatten()  # Índices de las canciones recomendadas
+    # recommended_songs = dataframe.iloc[recommended_songs_indices]
+        
+    # recommended_songs = recommended_songs[~recommended_songs['track_name'].isin(analyzed_songs['track_name'])]    
+    # recommended_songs = recommended_songs.sort_values(by='Total Streams', ascending=False).sample(10)
+
+    # plot.plot_clusters(dataframe[['positive_sentiment', 'negative_sentiment', 'neutral_sentiment']], 
+    #               1,
+    #               recommended_songs, 
+    #               liked_songs= analyzed_songs,
+    #               sentiment=True,
+    #               title="Sentiment KNN Recommended Songs")
+    
+    # return recommended_songs
 
 
 def tensorFlowKmeans(dataframe, analyzed_songs):
